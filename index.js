@@ -60,14 +60,24 @@ client.on("messageCreate", async (message) => {
         ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
         : null;
 
+      // 🧠 Get genre names from IDs
+      const genres =
+        movie.genre_ids
+          .map(
+            (id) =>
+              Object.entries(genreMap).find(([, value]) => value === id)?.[0]
+          )
+          .filter(Boolean)
+          .map((g) => g.charAt(0).toUpperCase() + g.slice(1)) // Capitalize
+          .join(", ") || "Unknown";
+
       const embed = new EmbedBuilder()
         .setTitle(movie.title)
         .setDescription(movie.overview || "No description available.")
-        .addFields({
-          name: "⭐ Rating",
-          value: `${movie.vote_average}`,
-          inline: true,
-        })
+        .addFields(
+          { name: "📚 Genre", value: genres, inline: true },
+          { name: "⭐ Rating", value: `${movie.vote_average}`, inline: true }
+        )
         .setColor(0xff5f5f);
 
       if (posterUrl) embed.setImage(posterUrl);
