@@ -1,7 +1,18 @@
-// index.js
 require("dotenv").config();
+const express = require("express");
 const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
 const axios = require("axios");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get("/", (req, res) => {
+  res.status(200).send("🎬 Movie Bot is running!");
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is live on port ${PORT}`);
+});
 
 const client = new Client({
   intents: [
@@ -42,7 +53,6 @@ client.on("messageCreate", async (message) => {
 
   const content = message.content.trim().toLowerCase();
 
-  // Handle !recommend and !movie
   if (content === "!recommend" || content === "!movie") {
     try {
       const res = await axios.get(
@@ -60,7 +70,6 @@ client.on("messageCreate", async (message) => {
         ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
         : null;
 
-      // 🧠 Get genre names from IDs
       const genres =
         movie.genre_ids
           .map(
@@ -88,8 +97,7 @@ client.on("messageCreate", async (message) => {
       message.channel.send("❗ Oops! Couldn't fetch a movie right now.");
     }
   }
-
-  // Handle !genre <genre>
+  
   if (content.startsWith("!genre")) {
     const args = content.split(" ");
     const genreInput = args[1];
