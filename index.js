@@ -53,10 +53,11 @@ client.on("messageCreate", async (message) => {
 
   const content = message.content.trim().toLowerCase();
 
+  // Handle !recommend
   if (content === "!recommend" || content === "!movie") {
     try {
       const res = await axios.get(
-        "https://api.themoviedb.org/3/trending/movie/day",
+        "https://api.themoviedb.org/3/trending/movie/day?language=en-US",
         {
           params: {
             api_key: process.env.TMDB_API_KEY,
@@ -65,39 +66,51 @@ client.on("messageCreate", async (message) => {
       );
 
       const movies = res.data.results;
-      const movie = movies[Math.floor(Math.random() * movies.length)];
-      const posterUrl = movie.poster_path
-        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-        : null;
+      const selectedMovies = [];
 
-      const genres =
-        movie.genre_ids
-          .map(
-            (id) =>
-              Object.entries(genreMap).find(([, value]) => value === id)?.[0]
+      while (selectedMovies.length < 5 && movies.length > 0) {
+        const randomIndex = Math.floor(Math.random() * movies.length);
+        const movie = movies.splice(randomIndex, 1)[0];
+        selectedMovies.push(movie);
+      }
+
+      const embeds = selectedMovies.map((movie) => {
+        const posterUrl = movie.poster_path
+          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+          : null;
+
+        const genres =
+          movie.genre_ids
+            .map(
+              (id) =>
+                Object.entries(genreMap).find(([, value]) => value === id)?.[0]
+            )
+            .filter(Boolean)
+            .map((g) => g.charAt(0).toUpperCase() + g.slice(1))
+            .join(", ") || "Unknown";
+
+        const embed = new EmbedBuilder()
+          .setTitle(movie.title)
+          .setDescription(movie.overview || "No description available.")
+          .addFields(
+            { name: "📚 Genre", value: genres, inline: true },
+            { name: "⭐ Rating", value: `${movie.vote_average}`, inline: true }
           )
-          .filter(Boolean)
-          .map((g) => g.charAt(0).toUpperCase() + g.slice(1)) // Capitalize
-          .join(", ") || "Unknown";
+          .setColor(0xff5f5f);
 
-      const embed = new EmbedBuilder()
-        .setTitle(movie.title)
-        .setDescription(movie.overview || "No description available.")
-        .addFields(
-          { name: "📚 Genre", value: genres, inline: true },
-          { name: "⭐ Rating", value: `${movie.vote_average}`, inline: true }
-        )
-        .setColor(0xff5f5f);
+        if (posterUrl) embed.setImage(posterUrl);
 
-      if (posterUrl) embed.setImage(posterUrl);
+        return embed;
+      });
 
-      message.channel.send({ embeds: [embed] });
+      message.channel.send({ embeds });
     } catch (err) {
       console.error(err);
       message.channel.send("❗ Oops! Couldn't fetch a movie right now.");
     }
   }
-  
+
+  // Handle !genre <genre>
   if (content.startsWith("!genre")) {
     const args = content.split(" ");
     const genreInput = args[1];
@@ -130,23 +143,44 @@ client.on("messageCreate", async (message) => {
       );
 
       const movies = res.data.results;
-      const movie = movies[Math.floor(Math.random() * movies.length)];
-      const posterUrl = movie.poster_path
-        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-        : null;
+      const selectedMovies = [];
 
-      const embed = new EmbedBuilder()
-        .setTitle(movie.title)
-        .setDescription(movie.overview || "No description available.")
-        .addFields(
-          { name: "📚 Genre", value: genreInput, inline: true },
-          { name: "⭐ Rating", value: `${movie.vote_average}`, inline: true }
-        )
-        .setColor(0x7f5fff);
+      while (selectedMovies.length < 5 && movies.length > 0) {
+        const randomIndex = Math.floor(Math.random() * movies.length);
+        const movie = movies.splice(randomIndex, 1)[0];
+        selectedMovies.push(movie);
+      }
 
-      if (posterUrl) embed.setImage(posterUrl);
+      const embeds = selectedMovies.map((movie) => {
+        const posterUrl = movie.poster_path
+          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+          : null;
 
-      message.channel.send({ embeds: [embed] });
+        const genres =
+          movie.genre_ids
+            .map(
+              (id) =>
+                Object.entries(genreMap).find(([, value]) => value === id)?.[0]
+            )
+            .filter(Boolean)
+            .map((g) => g.charAt(0).toUpperCase() + g.slice(1))
+            .join(", ") || "Unknown";
+
+        const embed = new EmbedBuilder()
+          .setTitle(movie.title)
+          .setDescription(movie.overview || "No description available.")
+          .addFields(
+            { name: "📚 Genre", value: genres, inline: true },
+            { name: "⭐ Rating", value: `${movie.vote_average}`, inline: true }
+          )
+          .setColor(0x7f5fff);
+
+        if (posterUrl) embed.setImage(posterUrl);
+
+        return embed;
+      });
+
+      message.channel.send({ embeds });
     } catch (err) {
       console.error(err);
       message.channel.send(
